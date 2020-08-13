@@ -26,6 +26,7 @@ setup(
         ],
     python_requires='>=3.6',
     install_requires=[
-                        'pyspark==2.4.4'
+                        'pyspark==2.4.4',
+                        'python_dotenv==0.14.0'
                     ]
 )
