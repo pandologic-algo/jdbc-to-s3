@@ -1,0 +1,32 @@
+{
+    "etl_tasks": [
+        {
+            "task_name": "task",
+            "table_name": "dbo.test",
+            "index_col": "Id",
+            "bucket_key": "buckt_name/key",
+            "processing_args": {
+                "pipeline": [
+                    "PartitionColsProcessor",
+                    "ColsDropperProcessor"
+                ],
+                "partition_col": "PartitionCol",
+                "cols_to_rm": ["Id"]
+            },
+            "file_format": "parquet"
+        }
+    ],
+    "db_config": {
+        "format": "jdbc",
+        "url": "jdbc:sqlserver://localhost:1433",
+        "database": "test",
+        "driver": "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+    },
+    "spark_config": {
+        "spark_jars": [
+            "jars/mssql-jdbc-6.1.0.jre8.jar"
+        ],
+        "partition_size": 5000000,
+        "fetch_size": 20000
+    }
+}
