@@ -8,7 +8,7 @@ from .data_handling import SparkHandler, SparkProcessorPipeline
 
 class Exporter:
 
-    def __init__(self, etl_tasks, spark_config, db_config, logger=None):
+    def __init__(self, spark_config, db_config, logger=None):
         """[summary]
 
         Args:
@@ -23,9 +23,6 @@ class Exporter:
         # class name
         self._name = self.__class__.__name__
 
-        # etl properties
-        self._etl_tasks = etl_tasks
-
         # logger
         self._logger = logger if logger else create_default_logger()
 
@@ -35,53 +32,51 @@ class Exporter:
         # spark processor
         self._spark_processor = SparkProcessorPipeline(logger=self._logger)
 
-    def run(self):
-        """The etl main run. 
+    def execute(self, table_task):
+        """[summary]
+
+        Args:
+            table_task ([type]): [description]
 
         Returns:
-            (bool): Return True if no exceptions were caught without handling.
+            [type]: [description]
         """
 
         try:
-            self._logger.info('{} - start etl run'.format(self._name))
+            self._logger.info('{} - start etl task=[{}]'.format(self._name, table_task.get('task_name')))
 
-            for table_task in self._etl_tasks:
-                self._logger.info('{} - start etl task=[{}]'.format(self._name, table_task.get('task_name')))
+            # table task params
+            table_name = table_task.get('table_name')
+            
+            # index column
+            index_col = table_task.get('index_col', 'Id')
 
-                # table task params
-                table_name = table_task.get('table_name')
-                
-                # index column
-                index_col = table_task.get('index_col', 'Id')
+            # bucket key
+            bucket_key = table_task.get('bucket_key')
 
-                # bucket key
-                bucket_key = table_task.get('bucket_key')
+            # processing args
+            processing_args = table_task.get('processing_args')
 
-                # processing args
-                processing_args = table_task.get('processing_args')
+            # save format
+            file_format = table_task.get('file_format')
 
-                # save format
-                file_format = table_task.get('file_format')
+            # spark dataframe
+            spark_df = self._spark_handler.read_table(table_name, index_col)
 
-                # spark dataframe
-                spark_df = self._spark_handler.read_table(table_name, index_col)
+            # spark dataframe with processing steps
+            spark_processed_df, partition_cols = self._spark_processor.process_data(spark_df, **processing_args)
 
-                # spark dataframe with processing steps
-                spark_processed_df, partition_cols = self._spark_processor.process_data(spark_df, **processing_args)
+            # write spark dataframe
+            self._spark_handler.write_df_to_s3(spark_processed_df, bucket_key, partition_cols=partition_cols, file_format=file_format, mode='append')
 
-                # write spark dataframe
-                self._spark_handler.write_df_to_s3(spark_processed_df, bucket_key, partition_cols=partition_cols, file_format=file_format, mode='append')
-
-                self._logger.info('{} - finished etl task=[{}]'.format(self._name, table_task.get('task_name')))
+            self._logger.info('{} - finished etl task=[{}]'.format(self._name, table_task.get('task_name')))
 
         except Exception as e:
-            self._logger.exception('{} - crucial error in etl:\n{}'.format(self._name, e))
+            self._logger.exception('{} - crucial error in etl task:\n{}'.format(self._name, e))
 
             return False
 
         finally:
             self._spark_handler.close_spark_session()
-
-        self._logger.info('{} - etl run is finished'.format(self._name))
 
         return True
