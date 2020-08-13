@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 from jdbc_to_s3 import __version__
 
@@ -10,7 +10,7 @@ with open("README.md", "r") as fh:
 setup(
     name='jdbc-to-s3',
     version=VERSION,
-    packages=['jdbc_to_s3'],
+    packages=find_packages(),
     url='https://github.com/pandologic-algo/jdbc-to-s3',
     download_url='https://github.com/pandologic-algo/jdbc-to-s3/archive/v{}.tar.gz'.format(VERSION),
     license='MIT License',
