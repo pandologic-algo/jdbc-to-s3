@@ -9,7 +9,7 @@ sys.path.append(os.getcwd())
 import pytest
 
 # internal 
-from jdbc_to_s3 import Exporter
+from jdbc_to_s3.etl import Exporter
 
 CONFIG_PATH = 'utils/config.json'
 
