@@ -193,6 +193,11 @@ class SparkHandler:
         except Exception as ex:
             self._logger.exception('{} - error in read table=[{}] index min-max values: {}'.format(self._name, table_name, ex))
 
+        self._logger.info('{} - table=[{}] bounderies: min_index=[{}] and max_index=[{}]'.format(self._name,
+            table_name,
+            min_index,
+            max_index))
+
         return min_index, max_index
 
     

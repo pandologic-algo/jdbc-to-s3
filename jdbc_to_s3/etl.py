@@ -58,7 +58,10 @@ class Exporter:
             processing_args = table_task.get('processing_args')
 
             # save format
-            file_format = table_task.get('file_format')
+            file_format = table_task.get('file_format', 'parquet')
+
+            # write mode
+            write_mode = table_task.get('mode', 'append')
 
             # spark dataframe
             spark_df = self._spark_handler.read_table(table_name, index_col)
@@ -67,7 +70,7 @@ class Exporter:
             spark_processed_df, partition_cols = self._spark_processor.process_data(spark_df, **processing_args)
 
             # write spark dataframe
-            self._spark_handler.write_df_to_s3(spark_processed_df, bucket_key, partition_cols=partition_cols, file_format=file_format, mode='append')
+            self._spark_handler.write_df_to_s3(spark_processed_df, bucket_key, partition_cols=partition_cols, file_format=file_format, mode=write_mode)
 
             self._logger.info('{} - finished etl task=[{}]'.format(self._name, table_task.get('task_name')))
 

@@ -13,7 +13,8 @@
                 "partition_col": "PartitionCol",
                 "cols_to_rm": ["Id"]
             },
-            "file_format": "parquet"
+            "file_format": "parquet",
+            "mode": "append"
         }
     ],
     "db_config": {
