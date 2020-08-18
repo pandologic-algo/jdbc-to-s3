@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-from jdbc_to_s3 import __version__
+from spark_jdbc_handler import __version__
 
 VERSION = __version__
 
@@ -8,11 +8,11 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(
-    name='jdbc-to-s3',
+    name='spark-jdbc-handler',
     version=VERSION,
     packages=find_packages(),
-    url='https://github.com/pandologic-algo/jdbc-to-s3',
-    download_url='https://github.com/pandologic-algo/jdbc-to-s3/archive/v{}.tar.gz'.format(VERSION),
+    url='https://github.com/pandologic-algo/spark-jdbc-handler',
+    download_url='https://github.com/pandologic-algo/spark-jdbc-handler/archive/v{}.tar.gz'.format(VERSION),
     license='MIT License',
     author='Pandologic',
     author_email='ebrill@pandologic.com',

@@ -10,7 +10,11 @@ from ..settings import secrets
 
 class SparkHandler:
     def __init__(self, partition_size=5*(10**6), fetch_size=20000, spark_jars=None, db_config=None, logger=None):
-        """[summary]
+        """SparkHandler contains simple API to spark cluster. 
+        It can initialize spark cluster by creating a SparkSession.
+        The 2 main API calls are:
+        - read_table : read a table given a table_name and index column.
+        - write_df_to_s3 : write spark df to s3 path
 
         Args:
             partition_size ([type], optional): [description]. Defaults to 5*(10**6).
@@ -70,6 +74,10 @@ class SparkHandler:
         except Exception as ex:
             self._logger.exception('{} - error in read table=[{}]: {}'.format(self._name, table_name, ex))
 
+            self._close_spark_session()
+
+            raise Exception('Could not read Dataframe')
+
         self._logger.info('{} - table=[{}] lazy read was done'.format(self._name, table_name))
 
         return df
@@ -94,6 +102,10 @@ class SparkHandler:
         except Exception as ex:
             self._logger.exception('{} - error in write table: {}'.format(self._name, ex))
 
+            self._close_spark_session()
+
+            raise Exception('Could not write Dataframe to s3 path')
+
         self._logger.info('{} - finished writing DataFrame'.format(self._name))
 
     def _init_spark_session(self):
@@ -117,19 +129,31 @@ class SparkHandler:
         except Exception as ex:
             self._logger.exception('{} - could not init spark session: {}'.format(self._name, ex))
 
+            self._close_spark_session()
+
+            raise Exception('Could not load spark session')
+
         return spark_session
 
     def _init_db_spark_session_reader(self):
-        reader = self._spark_session.read \
-            .format(self._db_config.get('format')) \
-            .option("url", self._db_config.get('url')) \
-            .option("user", secrets.get('DB_USER')) \
-            .option("password", secrets.get('DB_PASSWORD')) \
-            .option("driver", self._db_config.get('driver')) 
+        try:
+            reader = self._spark_session.read \
+                .format(self._db_config.get('format')) \
+                .option("url", self._db_config.get('url')) \
+                .option("user", secrets.get('DB_USER')) \
+                .option("password", secrets.get('DB_PASSWORD')) \
+                .option("driver", self._db_config.get('driver'))
+
+        except Exception as ex:
+            self._logger.exception('{} - could not init spark reader') 
+
+            self._close_spark_session()
+
+            raise Exception('Could not init spark reader')
 
         return reader
 
-    def close_spark_session(self):
+    def _close_spark_session(self):
         """[summary]
         """
         try:
@@ -159,6 +183,10 @@ class SparkHandler:
 
                     if attempt < attempts:
                         time.sleep(60)
+                    else:
+                        self._close_spark_session()
+
+                        raise Exception('Could not resession spark session after {} attempts'.format(attempts))
         
     def _spark_read_table_index_min_max(self, index_col, table_name):
         """[summary]
@@ -170,9 +198,6 @@ class SparkHandler:
         Returns:
             [type]: [description]
         """
-        # defaults
-        min_index, max_index = None, None
-
         # check if session exists, if not resession
         self._resession_spark_session()
 
@@ -190,8 +215,13 @@ class SparkHandler:
                 .asDict()
             
             min_index, max_index = dict_index_min_max.get('minIndex'), dict_index_min_max.get('maxIndex')
+
         except Exception as ex:
             self._logger.exception('{} - error in read table=[{}] index min-max values: {}'.format(self._name, table_name, ex))
+
+            self._close_spark_session()
+
+            raise Exception('Could not get table index min-max values')
 
         self._logger.info('{} - table=[{}] bounderies: min_index=[{}] and max_index=[{}]'.format(self._name,
             table_name,
@@ -199,6 +229,3 @@ class SparkHandler:
             max_index))
 
         return min_index, max_index
-
-    
-
