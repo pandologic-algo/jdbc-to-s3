@@ -74,3 +74,7 @@ class Exporter:
         self._logger.info('{} - finished etl task=[{}]'.format(self._name, table_task.get('task_name')))
 
         return True
+
+    def shutdown(self):
+        self._spark_handler.shutdown()
+

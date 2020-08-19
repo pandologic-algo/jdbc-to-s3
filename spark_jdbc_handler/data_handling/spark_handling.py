@@ -109,6 +109,11 @@ class SparkHandler:
 
         self._logger.info('{} - finished writing DataFrame'.format(self._name))
 
+    def shutdown(self):
+        """[summary]
+        """
+        self._close_spark_session()
+        
     def _init_spark_session(self):
         try:
             spark_session = SparkSession\
