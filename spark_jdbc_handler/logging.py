@@ -5,6 +5,11 @@ LOGGING_LEVEL = logging.INFO
 
 
 def create_default_logger():
+    """Create package default logger. With a simple StreamHandler and default INFO level.
+
+    Returns:
+        [Logger]: return simple logger instance.
+    """
     logger = logging.getLogger(__name__.split('.')[0])
 
     logger.setLevel(LOGGING_LEVEL)

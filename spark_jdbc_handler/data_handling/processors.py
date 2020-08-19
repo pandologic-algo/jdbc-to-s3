@@ -15,14 +15,18 @@ class PartitionColsProcessor:
 
     @classmethod
     def process_data(cls, df, partition_col=None, **kwargs):
-        """[summary]
+        """Given a spark Dataframe [df] and defined [partition_col], the Processor create new columns for future DataFrame
+        write operation with partition columns schema.
+        The processor check if the [partition_col] is a Datetime data dtype, and create ['year', 'month', 'day'] columns.
+        Else, if it's not a Datetime column it will use the partition column as it is.
 
         Args:
-            df ([type]): [description]
-            partition_col ([type], optional): [description]. Defaults to None.
+            df ([DataFrame]): spark DataFrame.
+            partition_col ([str], optional): Column to use as partition column. Defaults to None.
 
         Returns:
-            [type]: [description]
+            [tuple: (DataFrame, list)]: return a tuple of the DataFrame after being processed and the created/configured 
+                partition columns list. 
         """
         partition_cols = None
 
@@ -43,6 +47,15 @@ class PartitionColsProcessor:
 
     @staticmethod
     def _process_date_partition(df, partition_col):
+        """Static method to create new spark DataFrame column to Datetime column type.
+
+        Args:
+            df ([DataFrame]): input spark DataFrame.
+            partition_col ([str]): spark DataFrame partition column name.
+
+        Returns:
+            [DataFrame]: processed spark DataFrame
+        """
         # year
         df = df.withColumn('year', year(col(partition_col)))
 
@@ -58,6 +71,15 @@ class PartitionColsProcessor:
 class ColsDropperProcessor:
     @staticmethod
     def process_data(df, cols_to_rm=None, **kwargs):
+        """Given columns to drop, the Processor drop the columns from the spark DataFrame.
+
+        Args:
+            df ([DataFrame]): input spark DataFrame.
+            cols_to_rm ([list], optional): list of the columns names. Defaults to None.
+
+        Returns:
+            [DataFrame]: spark DataFrame after column are removed.
+        """
         if cols_to_rm is not None:
             df = df.drop(*tuple(cols_to_rm))
 
@@ -72,6 +94,12 @@ processors = dict(
 
 class SparkProcessorPipeline:
     def __init__(self, logger=None):
+        """Processors Pipeline, which will process spark DataFrame due to give pipeline steps.
+
+        Args:
+            logger ([Logger], optional): Logger instance. Defaults to None.
+        """
+        # possible pipeline processors mapping
         self._processors = processors     
         
         self._logger = logger if logger else logging.getLogger(__name__.split('.')[0])
@@ -79,6 +107,16 @@ class SparkProcessorPipeline:
         self._name = self.__class__.__name__
 
     def process_data(self, df, pipeline, **kwargs):
+        """Iterate input pipeline and perform Processors steps.
+
+        Args:
+            df ([DataFrame]): input spark DataFrame
+            pipeline ([list]): list of the pipeline Processors steps.
+
+        Returns:
+            [tuple: (DataFrame, list)]: return a tuple of the DataFrame after being processed and the created/configured 
+                partition columns list (can be None).
+        """
         self._logger.info('{} - start pipeline: {}'.format(self._name, pipeline))
 
         partition_cols = None
@@ -90,6 +128,7 @@ class SparkProcessorPipeline:
             # dataframe
             df = processor.process_data(df, **kwargs)
 
+            # special processor
             if processor.__name__ == 'PartitionColsProcessor':
                 df, partition_cols = df
 
