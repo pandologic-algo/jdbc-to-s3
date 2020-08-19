@@ -6,6 +6,6 @@ COPY . /workspace/package/
 # install requirements
 RUN pip3 --disable-pip-version-check --no-cache-dir install -r /workspace/package/requirements.txt 
 
-WORKDIR /workspace/package/
+# WORKDIR /workspace/package/
 
-ENTRYPOINT ["pytest", "tests/"]
+# ENTRYPOINT ["pytest", "tests/"]

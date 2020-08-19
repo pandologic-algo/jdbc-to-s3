@@ -12,10 +12,22 @@ class Exporter:
         """[summary]
 
         Args:
-            etl_tasks ([type]): [description]
-            spark_config ([type]): [description]
-            db_config ([type]): [description]
-            logger ([type], optional): [description]. Defaults to None.
+            spark_config ([dict]): SparkHandler config:
+            {
+                "spark_jars": [
+                    "path/to/jar.jar"
+                ],
+                "partition_size": 5000000,
+                "fetch_size": 20000
+            }
+            db_config ([dict]): database connection config:
+            {
+                "format": "jdbc",
+                "url": "jdbc:sqlserver://localhost:1433",
+                "database": "database_name",
+                "driver": "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+            }
+            logger ([Logger], optional): package logger. Defaults to None.
         """
         # config
         self._config = Config(spark_config, db_config)
@@ -33,13 +45,33 @@ class Exporter:
         self._spark_processor = SparkProcessorPipeline(logger=self._logger)
 
     def execute(self, table_task):
-        """[summary]
+        """Execute a full ETL process on a table task:
+        1. Get task params.
+        2. Read table from database using jdbc driver and SparkHandler (SparkSession) and return a spark DataFrame.
+        3. Process spark DataFrame according to defined task processing_args and the defined pipeline.
+        4. Write Processed spark DataFrame to s3 path.
 
         Args:
-            table_task ([type]): [description]
+            table_task ([dict]): user  defined task:
+            {
+            "task_name": "task_name",
+            "table_name": "dbo.table_name",
+            "index_col": "Id",
+            "bucket_key": "buckt_name/key",
+            "processing_args": {
+                "pipeline": [
+                    "PartitionColsProcessor",
+                    "ColsDropperProcessor"
+                ],
+                "partition_col": "PartitionCol",
+                "cols_to_rm": ["Id"]
+            },
+            "file_format": "parquet",
+            "mode": "append"
+        }
 
         Returns:
-            [type]: [description]
+            [bool]: If execution succeed return True.
         """
 
         self._logger.info('{} - start etl task=[{}]'.format(self._name, table_task.get('task_name')))
@@ -76,5 +108,6 @@ class Exporter:
         return True
 
     def shutdown(self):
+        """shutdown spark handler (SparkSession).
+        """
         self._spark_handler.shutdown()
-
