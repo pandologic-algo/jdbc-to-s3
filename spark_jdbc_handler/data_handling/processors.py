@@ -41,7 +41,7 @@ class PartitionColsProcessor:
                 df = cls._process_date_partition(df, partition_col)
 
             # partition_cols
-            partition_cols = DATE_PARTITION_COLS if is_date_partition_col else list(partition_col)
+            partition_cols = DATE_PARTITION_COLS if is_date_partition_col else [partition_col]
 
         return df, partition_cols
 

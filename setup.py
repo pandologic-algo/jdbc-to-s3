@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-from jdbc_to_s3 import __version__
+from spark_jdbc_handler import __version__
 
 VERSION = __version__
 
