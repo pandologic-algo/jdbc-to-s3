@@ -14,20 +14,20 @@
                 "cols_to_rm": ["Id"]
             },
             "file_format": "parquet",
-            "mode": "append"
+            "mode": "append",
+            "partition_size": 10000,
+            "fetch_size": 5000
         }
     ],
     "db_config": {
         "format": "jdbc",
-        "url": "jdbc:sqlserver://localhost:1433",
+        "url": "jdbc:sqlserver://localhost:1433;database=test;",
         "database": "test",
         "driver": "com.microsoft.sqlserver.jdbc.SQLServerDriver"
     },
     "spark_config": {
         "spark_jars": [
             "jars/mssql-jdbc-6.1.0.jre8.jar"
-        ],
-        "partition_size": 5000000,
-        "fetch_size": 20000
+        ]
     }
 }
