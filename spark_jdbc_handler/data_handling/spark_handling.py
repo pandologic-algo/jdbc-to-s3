@@ -10,7 +10,7 @@ from ..settings import secrets
 
 
 class SparkHandler:
-    def __init__(self, partition_size=5*(10**6), fetch_size=20000, spark_jars=None, db_config=None, logger=None):
+    def __init__(self, spark_jars=None, db_config=None, logger=None):
         """SparkHandler contains simple API to spark cluster. 
         It can initialize spark cluster by creating a SparkSession.
         The 3 public class functionalities are:
@@ -19,18 +19,11 @@ class SparkHandler:
         - shutdown : shutdown the SparkSession
 
         Args:
-            partition_size ([int], optional): size of each read partition from the database. Defaults to 5*(10**6). From that parameter combined with other 
-                we determine the numPartitions of SparkSession JDBC read.
-            fetch_size ([int], optional): SparkSession JDBC read fetchsize parameter. Defaults to 20000.
             spark_jars ([list], optional): paths to jdbc jars. Defaults to None.
             db_config ([dict], optional): database connetion parameters. Defaults to None.
             logger ([Logger], optional): logger instance for logging package process. Defaults to None.
         """
         self._name = self.__class__.__name__
-
-        self._partition_size = partition_size
-
-        self._fetch_size = fetch_size
 
         self._logger = logger if logger else logging.getLogger(__name__.split('.')[0])
 
@@ -41,19 +34,21 @@ class SparkHandler:
         # spark session
         self._spark_session = self._init_spark_session()
 
-    def read_table(self, table_name, index_col):
+    def read_table(self, table_name, index_col, partition_size=100*(10**3), fetch_size=20*(10**3)):
         """Public method for reading a table using SparkSession. The reading spark params are derived from user configuration and table status:
         - partitionColumn: user config
         - lowerBound: read from database table according to [index_col]="partitionColumn"
         - upperBound: read from database table according to [index_col]="partitionColumn"
-        - numPartitions: derived from "lowerBound", "upperBound" and [self._partition_size] values.
+        - numPartitions: derived from "lowerBound", "upperBound" and [partition_size] values.
         - fetchsize: user config
         More info on these params can be found here - https://spark.apache.org/docs/latest/sql-data-sources-jdbc.html.
         Args:
             table_name ([str]): table database name, inluded with the table schema (e.g.: "dbo.test"). 
                 Also possible to pass a sub-query, e.g: "(select top 1000 * from dbo.test) as t"
             index_col ([str]): named index column for spark parallelism.
-
+            partition_size ([int], optional): size of each read partition from the database. Defaults to 100*(10**3). From that parameter combined with other 
+                we determine the numPartitions of SparkSession JDBC read.
+            fetch_size ([int], optional): SparkSession JDBC read fetchsize parameter. Defaults to 20*(10**3).
         Returns:
             [DataFrame]: spark DataFrame
         """
@@ -69,7 +64,7 @@ class SparkHandler:
         reader = self._init_db_spark_session_reader()
 
         # num of partitions
-        num_partitions = max(int((max_index - min_index + 1)/self._partition_size), 1)
+        num_partitions = max(int((max_index - min_index + 1)/partition_size), 1)
 
         try:
             df = reader\
@@ -78,7 +73,7 @@ class SparkHandler:
                 .option("lowerBound", str(min_index)) \
                 .option("upperBound", str(max_index)) \
                 .option("numPartitions", str(num_partitions)) \
-                .option("fetchsize", str(self._fetch_size)) \
+                .option("fetchsize", str(fetch_size)) \
                 .load()
         except Exception as ex:
             self._logger.exception('{} - error in read table=[{}]: {}'.format(self._name, table_name, ex))
@@ -193,7 +188,7 @@ class SparkHandler:
                 .option("driver", self._db_config.get('driver'))
 
         except Exception as ex:
-            self._logger.exception('{} - could not init spark reader') 
+            self._logger.exception('{} - could not init spark reader'.format(ex)) 
 
             self._close_spark_session()
 
