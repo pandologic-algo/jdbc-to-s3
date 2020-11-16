@@ -16,9 +16,7 @@ class Exporter:
             {
                 "spark_jars": [
                     "path/to/jar.jar"
-                ],
-                "partition_size": 5000000,
-                "fetch_size": 20000
+                ]
             }
             db_config ([dict]): database connection config:
             {
@@ -67,7 +65,9 @@ class Exporter:
                 "cols_to_rm": ["Id"]
             },
             "file_format": "parquet",
-            "mode": "append"
+            "mode": "append",
+            "partition_size: 100,
+            "fetch_size: 100
         }
 
         Returns:
@@ -91,11 +91,15 @@ class Exporter:
         # save format
         file_format = table_task.get('file_format', 'parquet')
 
+        # read params
+        partition_size = table_task.get('partition_size', 100*(10**3))
+        fetch_size = table_task.get('fetch_size', 20*(10**3))
+
         # write mode
         write_mode = table_task.get('mode', 'append')
 
         # spark dataframe
-        spark_df = self._spark_handler.read_table(table_name, index_col)
+        spark_df = self._spark_handler.read_table(table_name, index_col, partition_size, fetch_size)
 
         # spark dataframe with processing steps
         spark_processed_df, partition_cols = self._spark_processor.process_data(spark_df, **processing_args)
